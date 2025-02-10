@@ -10,10 +10,8 @@ Garantir alta disponibilidade para serviços web utilizando o balanceador de car
 - **Servidores Apache HTTPD**: Servidores Web Backend.
 
 ### 2.2 Configuração de Rede
-1. Instalamos e configuramos os servidores Apache e o HAProxy.
-2. O cliente acessa o IP do HAProxy.
-3. O HAProxy distribui as requisições entre os servidores backend (Apache).
-4. Caso um servidor falhe, o HAProxy redireciona as requisições para os servidores restantes.
+Inicialmente, realizamos a instalação do Apache HTTPD e configuramos suas páginas nos servidores backend.
+Os servidores recebiam IPs dinâmicos via DHCP, o que fazia com que um ou mais servidores tivessem seus endereços alterados ao serem reiniciados. Isso gerava inconsistências no balanceamento de carga, pois o HAProxy dependia de IPs fixos para direcionar as requisições corretamente.
 
 ### 2.3 Definição de IPs Estáticos
 Inicialmente, os IPs dos servidores mudavam ao reiniciar a máquina virtual. Para resolver isso, configuramos os seguintes IPs estáticos:
@@ -26,10 +24,12 @@ A configuração foi feita no arquivo `/etc/network/interfaces`, garantindo que 
 ## 3. Configuração dos Servidores Apache (HTTPD)
 
 ### 3.1 Instalação e Configuração
+Para instalar o Apache em cada servidor backend, execute:
+
 ```bash
 sudo apt update && sudo apt install apache2 -y
 ```
-Criamos uma página HTML personalizada em cada servidor para validar o balanceamento de carga.
+Cada servidor Apache deve ter uma página HTML personalizada para testar o balanceamento de carga.
 
 #### **Arquivo `/var/www/html/index.html`**
 
@@ -61,8 +61,6 @@ Criamos uma página HTML personalizada em cada servidor para validar o balanceam
 </html>
 ```
 
-Adicionamos CSS para estilizar as páginas.
-
 ## 4. Instalação e Configuração do HAProxy
 
 ### 4.1 Instalação
@@ -71,7 +69,8 @@ sudo apt update && sudo apt install haproxy -y
 ```
 
 ### 4.2 Configuração do HAProxy
-Editamos o arquivo `/etc/haproxy/haproxy.cfg` e adicionamos:
+O arquivo de configuração do HAProxy `(/etc/haproxy/haproxy.cfg)` deve ser atualizado com as seguintes definições:
+
 
 ```cfg
 frontend http_front
@@ -85,6 +84,11 @@ backend http_back
     server srv2 10.49.10.11:80 check
     server srv3 10.49.10.12:80 check
 ```
+Após editar o arquivo, reinicie o HAProxy:
+
+```cfg
+sudo systemctl restart haproxy
+```
 
 ### 4.3 Explicação
 - `balance roundrobin`: Define o algoritmo de balanceamento como "round-robin".
@@ -94,12 +98,23 @@ backend http_back
 ## 5. Monitoramento e Failover
 Habilitamos o `option httpchk` no HAProxy para garantir que apenas servidores ativos recebam tráfego.
 
-### Testes de Verificação
-1. **Verificação de logs** nos servidores Apache:
-   ```bash
-   tail -f /var/log/apache2/access.log
-   ```
-2. **Teste de Failover:**
+```cfg
+curl https://<IP_DO_HAPROXY>
+```
+Verifique se as respostas alternam entre os servidores.
+
+```cfg
+tall -f /var/log/apache2/accees.log
+```
+Resultado esperado: As requisições devem alternar entre os servidores 1 e 2. (clicando em F5)
+
+### 5.1 Testes de Verificação de Saúde
+No arquivo haproxy.cfg, ativamos o option httpchk, que verifica automaticamente a saúde dos servidores. Apenas servidores ativos recebem tráfego.
+
+## 5.2 Testes de Balanciamenteo de Carga
+1. Acesse o IP do HAProxy pelo navegador e recarregue a página diversas vezes.
+
+## 5.2 Teste de Failover:**
    - Desligamos um servidor (`sudo systemctl stop apache2`).
    - Repetimos o acesso ao IP do HAProxy.
    - Verificamos que todas as requisições foram redirecionadas para os servidores restantes.
