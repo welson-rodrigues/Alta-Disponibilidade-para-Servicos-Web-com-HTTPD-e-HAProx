@@ -80,9 +80,8 @@ frontend http_front
 backend http_back
     balance roundrobin
     option httpchk GET /
-    server srv1 10.49.10.10:80 check
-    server srv2 10.49.10.11:80 check
-    server srv3 10.49.10.12:80 check
+    server srv1 10.49.10.11:80 check
+    server srv2 10.49.10.12:80 check
 ```
 Após editar o arquivo, reinicie o HAProxy:
 
@@ -123,6 +122,3 @@ No arquivo haproxy.cfg, ativamos o option httpchk, que verifica automaticamente 
 - O HAProxy foi configurado com sucesso para balanceamento de carga e failover.
 - Os testes demonstraram que o sistema pode continuar operando mesmo em caso de falha de um servidor backend.
 - A configuração de IPs estáticos garantiu a estabilidade dos servidores.
-
-## 7. Referências
-WEB SERVER LOAD-BALANCING WITH HAPROXY ON UBUNTU 14.04. [s.l.]: [s.n.], [s.d.]. Disponível em: [URL]. Acesso em: 09 fev. 2025.
